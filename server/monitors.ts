@@ -14,6 +14,7 @@ export interface Wanted {
 
 const pct = (part: number | null, whole: number | null): number | null => (part !== null && whole ? Math.round((part / whole) * 1000) / 10 : null)
 const gb = (n: number | null): string => (n ? ` (${(n / 1e9).toFixed(0)} GB wired)` : '')
+const up = (seconds: number): string => (seconds < 3600 ? `${Math.round(seconds / 60)} min` : seconds < 172_800 ? `${Math.floor(seconds / 3600)} h ${Math.round((seconds % 3600) / 60)} min` : `${Math.floor(seconds / 86_400)} d ${Math.floor((seconds % 86_400) / 3600)} h`)
 
 type Judged = Omit<Monitor, 'since'>
 
@@ -34,7 +35,7 @@ export function monitors(s: Snapshot, settings: ServerSettings, downTicks: Recor
     } else if (app.state === 'unknown') {
       add(`${app.id}-up`, `${app.name} up`, 'apps', app.id, 'nodata', 'Not looked at yet')
     } else {
-      add(`${app.id}-up`, `${app.name} up`, 'apps', app.id, 'ok', `Answering in ${app.latencyMs ?? 0} ms${app.health ? `, up since ${app.health.startedAt}` : ''}`)
+      add(`${app.id}-up`, `${app.name} up`, 'apps', app.id, 'ok', `Answering in ${app.latencyMs ?? 0} ms${app.health ? `, up ${up(app.health.uptimeSeconds)}` : ''}`)
     }
     const deps = Object.entries(app.health?.deps ?? {})
     const down = deps.filter(([, state]) => state === 'down')

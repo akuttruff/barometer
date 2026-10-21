@@ -78,6 +78,7 @@ describe('parsers', () => {
     expect(isErrorLine('    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)')).toBe(false)
     expect(isErrorLine('  ➜  Local:   http://localhost:8410/')).toBe(false)
     expect(isErrorLine('[cairn] 3 lookups cached')).toBe(false)
+    expect(isErrorLine('[engine] readings written for 14 of 14 aspects')).toBe(false)
   })
 
   it('reads services-watch\'s lines', () => {

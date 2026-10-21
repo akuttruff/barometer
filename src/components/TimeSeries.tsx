@@ -48,7 +48,7 @@ export default function TimeSeries({ series, unit = '', format, height = 170, fr
   const box = useRef<HTMLDivElement>(null)
   const width = useWidth(box)
   const [hover, setHover] = useState<number | null>(null)
-  const fmt = format ?? ((v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2).replace(/\.?0+$/, '')))
+  const fmt = format ?? ((v: number) => (Number.isInteger(v) ? String(v) : Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2).replace(/\.?0+$/, '')))
 
   const now = Date.now()
   const x0 = now - hours * 3600_000

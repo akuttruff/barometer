@@ -397,12 +397,14 @@ export function watchLog(offset: number, file = WATCH_LOG): { lines: WatchLine[]
 
 // --- the apps' own logs ------------------------------------------------------
 
-const ERROR_WORDS = /\b(error|errors|failed|failure|exception|unhandled|rejected|timeout|timed out|cannot|could not|not remembered|E[A-Z]{4,})\b/i
+const ERROR_WORDS = /\b(error|errors|failed|failure|exception|unhandled|rejected|timeout|timed out|cannot|could not|not remembered)\b/i
+/** Node's error codes, which are upper case: ECONNREFUSED, ENOENT, ETIMEDOUT. */
+const ERRNO = /\bE[A-Z]{4,}\b/
 /** Lines that only look like errors: Vite's banner, a stack frame's path. */
 const NOT_ERRORS = /^\s+at |^\s*➜|vite v\d/
 
 /** Whether a line of an app's log says something went wrong. */
-export const isErrorLine = (line: string): boolean => ERROR_WORDS.test(line) && !NOT_ERRORS.test(line)
+export const isErrorLine = (line: string): boolean => (ERROR_WORDS.test(line) || ERRNO.test(line)) && !NOT_ERRORS.test(line)
 
 /** The error lines an app has logged since the last look, each stamped with when it was seen. */
 export function appErrors(file: string, offset: number, now = Date.now()): { lines: { ts: string; text: string }[]; offset: number } {

@@ -17,11 +17,12 @@ const OUT = 'docs/screenshots'
 const PORT = Number(process.env.CHROME_PORT ?? 9336)
 
 const PHONE = { width: 430, height: 932, scale: 2, mobile: true }
-const DESKTOP = { width: 1100, height: 900, scale: 2, mobile: false }
+const DESKTOP = { width: 1200, height: 1500, scale: 2, mobile: false }
 
 const scenarios = [
   { name: 'board-phone', view: PHONE, steps: [['wait', 2500]] },
-  { name: 'board-phone-more', view: PHONE, steps: [['wait', 2500], ['scroll', '.scroll', 900]] },
+  { name: 'board-phone-more', view: PHONE, steps: [['wait', 2500], ['scroll', '.dash', 1750]] },
+  { name: 'board-phone-graphs', view: PHONE, steps: [['wait', 2500], ['scroll', '.dash', 2700]] },
   { name: 'board-desktop', view: DESKTOP, steps: [['wait', 2500]] },
   { name: 'settings-phone', view: PHONE, steps: [['wait', 2000], ['aria', 'Settings'], ['wait', 600]] },
 ]
@@ -67,7 +68,7 @@ async function run(scenario) {
     for (const [op, a, b] of scenario.steps) {
       if (op === 'wait') await sleep(a)
       if (op === 'aria') await evaluate(`(() => { const el = document.querySelector('[aria-label=${JSON.stringify(a)}]'); if (!el) return 'missing'; el.click(); return 'ok' })()`)
-      if (op === 'scroll') await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(a)}) ?? document.scrollingElement; el.scrollBy(0, ${b}); return 'ok' })()`)
+      if (op === 'scroll') await evaluate(`(() => { window.scrollBy(0, ${b}); return 'ok' })()`)
       if (op !== 'wait') await sleep(300)
     }
     const shot = await send('Page.captureScreenshot', { format: 'png' })
