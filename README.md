@@ -25,7 +25,7 @@ something needs a look.
 | Services | The speech server (Kokoro), oMLX | A request to each; oMLX also says what it has loaded. |
 | Model | LM Studio | Which models are loaded and with what context. Every ten minutes, when nothing else is being written, a short timed completion: time to first token and tokens a second. |
 | Mac | Memory pressure, wired and free memory, disk, load, thermal throttling, Tailscale, the default route | `sysctl`, `vm_stat`, `df`, `pmset -g therm`, `tailscale status --json`, `route`. |
-| Data | Each app's SQLite file and the memory file | Size, last write, a few row counts, SQLite's quick check every fifteen minutes, and the newest dated copy in the iCloud Drive backup folder; plus the backup job's own log. |
+| Data | Each app's SQLite file and the memory file | Size, last write, a few row counts, SQLite's quick check every fifteen minutes, and the newest dated copy in `~/Backups`; plus the backup job's own log. |
 | Events | Restarts, deploys, stops | An app whose start time moved has restarted: a deploy when its commit changed, otherwise something to look at, with launchd's reason from `services-watch`'s log. |
 
 ## Alerts
@@ -55,11 +55,6 @@ Node 24 or newer. `npm install`, then:
 Settings on the page hold the LM Studio URL and token, how often to time the
 model, the thresholds, and whether to notify the Mac. Push to a phone needs
 the app on the home screen; turn it on from Settings there.
-
-The backup and iCloud checks read `~/Library/Mobile Documents`, which macOS
-keeps from background processes until the `node` binary is given Full Disk
-Access in System Settings; until then those rows say so and the rest of the
-board works.
 
 ## How it is built
 

@@ -79,7 +79,7 @@ export const DATA: DataTarget[] = [
   },
 ]
 
-export const BACKUPS_DIR = path.join(HOME, 'Library/Mobile Documents/com~apple~CloudDocs/Backups')
+export const BACKUPS_DIR = path.join(HOME, 'Backups')
 export const BACKUP_LOG = path.join(HOME, 'Library/Logs/backup-data.log')
 export const WATCH_LOG = path.join(HOME, 'Library/Logs/services-watch.log')
 export const TAILSCALE_BIN = '/Applications/Tailscale.app/Contents/MacOS/Tailscale'

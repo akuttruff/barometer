@@ -317,7 +317,7 @@ export function dataFileStatus(target: DataTarget, options: { check: boolean; ma
     backup = backupStatus(fs.readdirSync(path.join(options.backupsDir ?? BACKUPS_DIR, target.backupDir)), target.backupPrefix, options.maxHours, options.now)
   } catch (err) {
     backup = { newest: null, ageHours: null, state: 'unknown' }
-    error = (err as NodeJS.ErrnoException).code === 'EPERM' ? 'Cannot read iCloud Drive: give node Full Disk Access in System Settings' : `Backups: ${(err as Error).message}`
+    error = `Backups: ${(err as Error).message}`
   }
   let st: fs.Stats
   try { st = fs.statSync(target.file) } catch (err) {
