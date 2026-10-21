@@ -9,7 +9,7 @@ import type { AppTarget, ServiceTarget } from './targets.ts'
 
 /** How each thing is looked at; the real ones read the machine, tests pass their own. */
 export interface Probes {
-  app: (target: AppTarget) => Promise<AppStatus>
+  app: (target: AppTarget, dnsName: string | null) => Promise<AppStatus>
   service: (target: ServiceTarget) => Promise<ServiceStatus>
   host: () => Promise<HostStatus>
   model: (settings: ServerSettings, probe: ModelProbe | null) => Promise<ModelStatus>
@@ -68,6 +68,8 @@ export class Collector {
   private probing = false
   /** The watch log's lines seen this round, by service, for the reason behind a restart. */
   private reasons = new Map<string, WatchLine>()
+  /** Each database's last quick check, kept between the rounds that run one. */
+  private checks = new Map<string, 'ok' | 'bad'>()
 
   constructor(private readonly store: Store, options: CollectorOptions = {}) {
     this.probes = options.probes ?? realProbes
@@ -120,13 +122,21 @@ export class Collector {
     this.store.setState('watch-offset', String(watched.offset))
     for (const line of watched.lines) this.reasons.set(line.target, line)
 
-    const [apps, services, host, model, data] = await Promise.all([
-      Promise.all(this.apps.map((t) => this.probes.app(t))),
+    // The Mac's name on the tailnet is what the apps are opened by; Tailscale is asked first, then everything else at once.
+    const host = await this.probes.host()
+    const dnsName = host.tailscale.dnsName ?? this.store.getState('dns-name')
+    if (host.tailscale.dnsName) this.store.setState('dns-name', host.tailscale.dnsName)
+    const [apps, services, model, data] = await Promise.all([
+      Promise.all(this.apps.map((t) => this.probes.app(t, dnsName))),
       Promise.all(this.services.map((t) => this.probes.service(t))),
-      this.probes.host(),
       this.probes.model(settings, this.lastProbe),
       Promise.resolve().then(() => this.probes.data({ check, maxHours: settings.backupMaxHours })),
     ])
+    // A database's check runs now and then; between runs the last answer stands.
+    for (const f of data.files) {
+      if (f.check === 'unknown') f.check = (this.checks.get(f.id) ?? 'unknown')
+      else this.checks.set(f.id, f.check)
+    }
 
     // The watch log says why a service restarted; said once, on the restart it belongs to.
     for (const line of watched.lines) {

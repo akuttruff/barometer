@@ -2,7 +2,6 @@ import { execFile } from 'node:child_process'
 import webPush from 'web-push'
 import type { Severity } from '../src/types.ts'
 import type { PushSubscription, Store } from './store.ts'
-import { TAILNET } from './targets.ts'
 
 /**
  * Saying so: a macOS notification on the Mac itself (the same way
@@ -23,6 +22,9 @@ export interface NotifierOptions {
   push?: (sub: PushSubscription, payload: string, vapid: Vapid) => Promise<void>
 }
 
+/** Who a push service may contact about these pushes. */
+const VAPID_SUBJECT = 'https://github.com/akuttruff/barometer'
+
 export interface Vapid { publicKey: string; privateKey: string }
 
 const SOUND: Record<Severity, string> = { info: 'Glass', warn: 'Funk', critical: 'Sosumi' }
@@ -36,7 +38,7 @@ export async function macNotification(n: Notice): Promise<void> {
 }
 
 export async function webPushSend(sub: PushSubscription, payload: string, vapid: Vapid): Promise<void> {
-  await webPush.sendNotification(sub, payload, { vapidDetails: { subject: TAILNET, publicKey: vapid.publicKey, privateKey: vapid.privateKey }, TTL: 3600 })
+  await webPush.sendNotification(sub, payload, { vapidDetails: { subject: VAPID_SUBJECT, publicKey: vapid.publicKey, privateKey: vapid.privateKey }, TTL: 3600 })
 }
 
 export class Notifier {

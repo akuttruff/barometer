@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { promisify } from 'node:util'
 import type { AppHealth, AppStatus, BackupStatus, DataFileStatus, DataStatus, HostStatus, LaunchdStatus, LoadedModel, ModelProbe, ModelStatus, Pressure, ServiceStatus, State, TailscaleStatus } from '../src/types.ts'
 import type { ServerSettings } from './store.ts'
-import { BACKUPS_DIR, BACKUP_LOG, DATA, TAILSCALE_BIN, WATCH_LOG } from './targets.ts'
+import { BACKUPS_DIR, BACKUP_LOG, DATA, TAILSCALE_BIN, WATCH_LOG, appUrl } from './targets.ts'
 import type { AppTarget, DataTarget, ServiceTarget } from './targets.ts'
 
 /**
@@ -54,8 +54,8 @@ export const launchdStatus = async (label: string): Promise<LaunchdStatus | null
 // --- the apps ---------------------------------------------------------------
 
 /** What an app's own health route says, and how long it took to say it. */
-export async function appStatus(target: AppTarget): Promise<AppStatus> {
-  const base = { id: target.id, name: target.name, url: target.url, port: target.port }
+export async function appStatus(target: AppTarget, dnsName: string | null): Promise<AppStatus> {
+  const base = { id: target.id, name: target.name, url: appUrl(target, dnsName), port: target.port }
   const launchd = await launchdStatus(target.label)
   try {
     const r = await timedGet(`http://127.0.0.1:${target.port}/api/health`, 8000)

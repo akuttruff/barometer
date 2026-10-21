@@ -8,22 +8,27 @@ import path from 'node:path'
  */
 
 export const HOME = os.homedir()
-export const TAILNET = 'https://amies-mac-studio.tail1585ef.ts.net'
 
 export interface AppTarget {
   id: string
   name: string
   port: number
   label: string
-  url: string
+  /** The HTTPS port `tailscale serve` gives the app on the tailnet (443 for the plain name); the host's name comes from Tailscale itself. */
+  tailnetPort: number
 }
 
 export const APPS: AppTarget[] = [
-  { id: 'lm-chat', name: 'LM Chat', port: 8010, label: 'com.amie.lm-chat', url: `${TAILNET}:8443` },
-  { id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', url: TAILNET },
-  { id: 'whetstone', name: 'Whetstone', port: 8310, label: 'com.amie.whetstone', url: `${TAILNET}:8444` },
-  { id: 'orrery', name: 'Orrery', port: 8410, label: 'com.amie.orrery', url: `${TAILNET}:8445` },
+  { id: 'lm-chat', name: 'LM Chat', port: 8010, label: 'com.amie.lm-chat', tailnetPort: 8443 },
+  { id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', tailnetPort: 443 },
+  { id: 'whetstone', name: 'Whetstone', port: 8310, label: 'com.amie.whetstone', tailnetPort: 8444 },
+  { id: 'orrery', name: 'Orrery', port: 8410, label: 'com.amie.orrery', tailnetPort: 8445 },
 ]
+
+/** Where an app is opened from: its address on the tailnet, once Tailscale has said what the Mac is called. */
+export const appUrl = (target: AppTarget, dnsName: string | null): string =>
+  dnsName ? `https://${dnsName}${target.tailnetPort === 443 ? '' : `:${target.tailnetPort}`}` : `http://127.0.0.1:${target.port}`
+
 
 export interface ServiceTarget {
   id: string

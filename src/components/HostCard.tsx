@@ -56,7 +56,7 @@ export default function HostCard({ host }: { host: HostStatus }) {
             <span className="row-num">{ts.peersOnline} of {ts.peers} devices online</span>
           </div>
           <div className="row-sub">
-            {ts.dnsName && <span className="mono">{ts.dnsName}</span>}
+            {ts.hostName && <span>{ts.hostName}</span>}
             {host.routeInterface && <span>via {ROUTE[host.routeInterface] ?? host.routeInterface}</span>}
           </div>
         </li>

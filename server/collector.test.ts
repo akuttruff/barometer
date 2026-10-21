@@ -51,7 +51,7 @@ function fakeProbes() {
   return { state, probes }
 }
 
-const targets = { apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', url: 'x' }], services: [{ id: 'speech', name: 'Speech', url: 'x', label: null, kind: 'speech' as const }] }
+const targets = { apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', tailnetPort: 443 }], services: [{ id: 'speech', name: 'Speech', url: 'x', label: null, kind: 'speech' as const }] }
 
 describe('Collector', () => {
   it('looks at everything, keeps the numbers, and checks the databases on the first round only', async () => {
@@ -63,8 +63,10 @@ describe('Collector', () => {
     expect(s.alerts).toEqual([])
     expect(c.latest).toBe(s)
     now += 15_000
-    await c.tick()
+    state.data = data({ files: [{ ...data().files[0]!, check: 'unknown' }] })
+    const again = await c.tick()
     expect(state.checks).toEqual([true, false])
+    expect(again.data.files[0]!.check).toBe('ok')
     expect(store.history('cairn', 'latency', 0, now).map((x) => x.value)).toEqual([12, 12])
     expect(store.last('host', 'free')?.value).toBe(4e9)
     expect(store.last('model', 'loaded')?.value).toBe(1)
