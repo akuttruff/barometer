@@ -1,19 +1,19 @@
 :root {
-  --bg: #f2f3f6;
-  --panel: #ffffff;
-  --line: #e1e4ea;
-  --line-strong: #c9ced8;
-  --text: #22242a;
-  --muted: #6b7079;
-  --accent: #632ca6;
-  --ok: #27a644;
-  --warn: #f0a30a;
-  --alert: #e0352b;
-  --nodata: #9ea3ad;
-  --ok-soft: #e7f6ea;
-  --warn-soft: #fff4de;
-  --alert-soft: #fde8e6;
-  --nodata-soft: #eff0f3;
+  --bg: #1B1D1A;
+  --panel: #23261F;
+  --line: #34372E;
+  --line-strong: #4A4E43;
+  --text: #EDE8DC;
+  --muted: #B9B4A6;
+  --accent: #D9B86A;
+  --ok: #2E9E4C;
+  --warn: #D9961A;
+  --alert: #D6453A;
+  --nodata: #5C6159;
+  --ok-soft: #22321F;
+  --warn-soft: #3A2F16;
+  --alert-soft: #3B2320;
+  --nodata-soft: #2A2D27;
   --radius: 6px;
   --gutter: 14px;
   font-size: 13px;
@@ -56,7 +56,7 @@ h1, h2, h3 { margin: 0; }
 .range { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
 .range button { padding: 5px 10px; border: none; background: var(--panel); color: var(--muted); font-weight: 600; }
 .range button + button { border-left: 1px solid var(--line-strong); }
-.range button.on { background: var(--accent); color: #fff; }
+.range button.on { background: var(--accent); color: var(--bg); }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: var(--radius); border: 1px solid var(--line-strong);
@@ -89,7 +89,7 @@ h1, h2, h3 { margin: 0; }
   grid-column: span 12; min-width: 0;
   display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(20, 24, 40, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .widget-head { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 7px; border-bottom: 1px solid var(--line); }
 .widget-head h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text); }
@@ -214,5 +214,5 @@ h1, h2, h3 { margin: 0; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .push { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0; font-size: 14px; }
 .btn { padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--line-strong); background: var(--panel); color: var(--text); font-weight: 600; }
-.primary { width: 100%; max-width: 720px; display: block; margin: 0 auto; padding: 11px; border-radius: var(--radius); border: none; background: var(--accent); color: #fff; font-weight: 700; }
+.primary { width: 100%; max-width: 720px; display: block; margin: 0 auto; padding: 11px; border-radius: var(--radius); border: none; background: var(--accent); color: var(--bg); font-weight: 700; }
 .error { color: var(--alert); }
