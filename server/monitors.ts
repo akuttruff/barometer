@@ -78,7 +78,7 @@ export function monitors(s: Snapshot, settings: ServerSettings, downTicks: Recor
   }
   const log = s.data.backupLog
   add('backup-job', 'Backup job', 'data', 'backups', log.state === 'warn' ? 'warn' : log.state === 'ok' ? 'ok' : 'nodata',
-    log.state === 'warn' ? `Last night's backup finished with ${log.failures} failure${log.failures === 1 ? '' : 's'}; see ~/Library/Logs/backup-data.log` : log.state === 'ok' ? `Last ran ${log.lastRun}` : 'No run seen yet')
+    log.state === 'warn' ? `Last night's backup finished with ${log.failures} failure${log.failures === 1 ? '' : 's'}; see ~/Library/Logs/backup-data.log` : log.state === 'ok' ? `Last ran ${log.lastRun ? new Date(log.lastRun).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'at a time not known'}` : 'No run seen yet')
 
   return out
 }

@@ -35,6 +35,8 @@ function ticks(lo: number, hi: number, n = 4): number[] {
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw
   const out: number[] = []
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v * 1e6) / 1e6)
+  // One more above the highest value, so a line never runs along the top edge.
+  if ((out.at(-1) ?? lo) < hi) out.push(Math.round((out.at(-1)! + step) * 1e6) / 1e6)
   return out
 }
 
