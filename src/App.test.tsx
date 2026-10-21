@@ -38,7 +38,7 @@ describe('App', () => {
     expect(screen.getByText('qwen/qwen3.8-27b')).toBeInTheDocument()
     expect(screen.getByText('128k context')).toBeInTheDocument()
     expect(screen.getByText('420 ms')).toBeInTheDocument()
-    expect(screen.getByText('pressure normal')).toBeInTheDocument()
+    expect(screen.getByTitle('Memory pressure')).toHaveTextContent('normal')
     expect(screen.getByText('2 of 2 devices online')).toBeInTheDocument()
     expect(screen.getByText('via Wi-Fi')).toBeInTheDocument()
     expect(screen.getByText('1,200 entries')).toBeInTheDocument()

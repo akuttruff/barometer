@@ -23,7 +23,7 @@ export default function HostCard({ host }: { host: HostStatus }) {
           <div className="row-main">
             <Dot state={pressure.state} />
             <span className="row-name">Memory</span>
-            <span className="row-detail">pressure {pressure.word}</span>
+            <span className="row-detail" title="Memory pressure">{pressure.word}</span>
             <span className="row-fill" />
             <span className="row-num">{bytes(host.wiredBytes)} wired</span>
             <Sparkline points={wired} label="Wired memory, last 6 hours" />
