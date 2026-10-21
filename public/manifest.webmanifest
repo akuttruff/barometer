@@ -1,0 +1,16 @@
+{
+  "name": "Barometer",
+  "short_name": "Barometer",
+  "description": "What is running on the Mac: the apps, the models, the machine and the backups, with a word when something is wrong.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B1D1A",
+  "theme_color": "#1B1D1A",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
