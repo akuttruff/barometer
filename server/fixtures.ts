@@ -5,13 +5,13 @@ import type { ServerSettings } from './store.ts'
 
 export const settings = (over: Partial<ServerSettings> = {}): ServerSettings => ({
   lmStudioUrl: 'http://127.0.0.1:1234', apiToken: '', probeEveryMinutes: 10, probeModel: '', expectModel: '', notifyMac: false,
-  diskFreePct: 10, backupMaxHours: 26, ttftMaxMs: 5000, tpsMin: 10, ...over,
+  diskFreePct: 10, backupMaxHours: 26, ttftMaxMs: 5000, tpsMin: 10, errorsMax: 5, ...over,
 })
 
 export const app = (id: string, over: Partial<AppStatus> = {}): AppStatus => ({
   id, name: id[0]!.toUpperCase() + id.slice(1), url: `https://studio.ts.net/${id}`, port: 8010, state: 'ok', latencyMs: 12,
   health: { ok: true, app: id, version: 'abc1234', startedAt: '2026-10-20T00:00:00.000Z', uptimeSeconds: 100, busy: {}, deps: { model: 'ok' }, data: { file: `${id}.sqlite`, bytes: 1000, lastWrite: '2026-10-20T00:00:00.000Z' }, errors: [] },
-  launchd: { pid: 100, runs: 1, lastExit: 0, state: 'running' }, busyTotal: 0, error: null, ...over,
+  launchd: { pid: 100, runs: 1, lastExit: 0, state: 'running' }, busyTotal: 0, error: null, errors: { last15m: 0, recent: [] }, ...over,
 })
 
 export const service = (id: string, over: Partial<ServiceStatus> = {}): ServiceStatus => ({ id, name: id, state: 'ok', latencyMs: 5, detail: null, launchd: null, error: null, ...over })
@@ -28,4 +28,4 @@ export const data = (over: Partial<DataStatus> = {}): DataStatus => ({
   backupLog: { lastRun: '2026-10-20T00:00:06.000Z', failures: 0, state: 'ok' }, ...over,
 })
 
-export const snapshot = (over: Partial<Snapshot> = {}): Snapshot => ({ ts: '2026-10-20T09:00:00.000Z', apps: [app('cairn')], services: [service('speech')], model: model(), host: host(), data: data(), alerts: [], ...over })
+export const snapshot = (over: Partial<Snapshot> = {}): Snapshot => ({ ts: '2026-10-20T09:00:00.000Z', apps: [app('cairn')], services: [service('speech')], model: model(), host: host(), data: data(), monitors: [], alerts: [], ...over })

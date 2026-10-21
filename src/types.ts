@@ -29,6 +29,11 @@ export interface LaunchdStatus {
   state: string | null
 }
 
+export interface ErrorLine {
+  ts: string
+  text: string
+}
+
 export interface AppStatus {
   id: string
   name: string
@@ -42,6 +47,8 @@ export interface AppStatus {
   /** Everything in flight, summed: what a restart would cut off. */
   busyTotal: number
   error: string | null
+  /** Error lines in the app's own log: how many in the last fifteen minutes, and the latest few. */
+  errors: { last15m: number; recent: ErrorLine[] }
 }
 
 /** A service that is not one of the apps: the speech server, oMLX. */
@@ -153,6 +160,23 @@ export interface Event {
   text: string
 }
 
+/** A monitor's light, as a dashboard shows it: `nodata` when it has nothing to judge yet. */
+export type MonitorStatus = 'ok' | 'warn' | 'alert' | 'nodata'
+
+export type MonitorGroup = 'apps' | 'services' | 'model' | 'mac' | 'data'
+
+/** One rule, judged: every monitor is listed every round, whatever its status. */
+export interface Monitor {
+  id: string
+  name: string
+  group: MonitorGroup
+  target: string
+  status: MonitorStatus
+  text: string
+  /** When it last left ok, for one that is triggered. */
+  since: string | null
+}
+
 /** One round of looking at everything. */
 export interface Snapshot {
   ts: string
@@ -161,6 +185,7 @@ export interface Snapshot {
   model: ModelStatus
   host: HostStatus
   data: DataStatus
+  monitors: Monitor[]
   alerts: Alert[]
 }
 
@@ -198,6 +223,8 @@ export interface Settings {
   backupMaxHours: number
   ttftMaxMs: number
   tpsMin: number
+  /** Error lines in an app's log in fifteen minutes before its monitor warns. */
+  errorsMax: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -211,4 +238,5 @@ export const DEFAULT_SETTINGS: Settings = {
   backupMaxHours: 26,
   ttftMaxMs: 5000,
   tpsMin: 10,
+  errorsMax: 5,
 }

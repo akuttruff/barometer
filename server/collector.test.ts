@@ -9,6 +9,7 @@ import type { Notice } from './notify.ts'
 import { Store } from './store.ts'
 import { app, data, host, model, service } from './fixtures.ts'
 import type { WatchLine } from './probes.ts'
+import type { ErrorLine } from '../src/types.ts'
 
 let dir: string
 let store: Store
@@ -35,6 +36,7 @@ function fakeProbes() {
     model: model(),
     data: data(),
     watch: [] as WatchLine[],
+    errors: [] as ErrorLine[],
     probe: { at: '2026-10-20T09:00:00.000Z', model: 'qwen/qwen3.5-9b', ttftMs: 300, tokensPerSecond: 60, tokens: 20 },
     probed: 0,
     checks: [] as boolean[],
@@ -47,11 +49,12 @@ function fakeProbes() {
     probeModel: async () => { state.probed++; return state.probe },
     data: ({ check }) => { state.checks.push(check); return state.data },
     watchLog: (offset) => { const lines = state.watch; state.watch = []; return { lines, offset: offset + lines.length } },
+    appErrors: (_file, offset) => { const lines = state.errors; state.errors = []; return { lines, offset: offset + lines.length } },
   }
   return { state, probes }
 }
 
-const targets = { apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', tailnetPort: 443 }], services: [{ id: 'speech', name: 'Speech', url: 'x', label: null, kind: 'speech' as const }] }
+const targets = { apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', tailnetPort: 443, log: 'x.log' }], services: [{ id: 'speech', name: 'Speech', url: 'x', label: null, kind: 'speech' as const }] }
 
 describe('Collector', () => {
   it('looks at everything, keeps the numbers, and checks the databases on the first round only', async () => {
@@ -61,6 +64,8 @@ describe('Collector', () => {
     const s = await c.tick()
     expect(s.apps[0]!.id).toBe('cairn')
     expect(s.alerts).toEqual([])
+    expect(s.monitors.map((m) => m.status)).toContain('ok')
+    expect(s.monitors.every((m) => m.since === null)).toBe(true)
     expect(c.latest).toBe(s)
     now += 15_000
     state.data = data({ files: [{ ...data().files[0]!, check: 'unknown' }] })
@@ -82,7 +87,8 @@ describe('Collector', () => {
     state.app = app('cairn', { state: 'down', health: null, error: 'fetch failed' })
     expect((await c.tick()).alerts).toEqual([])
     const down = await c.tick()
-    expect(down.alerts).toMatchObject([{ rule: 'app-down', target: 'cairn', severity: 'critical' }])
+    expect(down.alerts).toMatchObject([{ rule: 'cairn-up', target: 'cairn', severity: 'critical' }])
+    expect(down.monitors.find((m) => m.id === 'cairn-up')).toMatchObject({ status: 'alert', since: down.alerts[0]!.openedAt })
     expect(notices).toMatchObject([{ title: 'Barometer: something is down', body: 'Cairn is not answering on :8010 (fetch failed)' }])
     await c.tick()
     expect(notices).toHaveLength(1)
@@ -154,5 +160,30 @@ describe('Collector', () => {
     off()
     await c.tick()
     expect(heard).toEqual(['snapshot', 'snapshot', 'event:alert', 'snapshot'])
+  })
+})
+
+describe('an app\'s own errors', () => {
+  it('counts the error lines its log gains, keeps the latest few, and warns past the threshold', async () => {
+    const { state, probes } = fakeProbes()
+    let now = 1_700_000_000_000
+    const c = new Collector(store, { probes, notifier, ...targets, now: () => now })
+    await c.tick()
+    state.errors = [{ ts: 'x', text: '[cairn] lookup failed: timeout' }, { ts: 'x', text: '[cairn] label: could not parse' }]
+    now += 15_000
+    let s = await c.tick()
+    expect(s.apps[0]!.errors).toEqual({ last15m: 2, recent: state.errors.length ? state.errors : [{ ts: 'x', text: '[cairn] lookup failed: timeout' }, { ts: 'x', text: '[cairn] label: could not parse' }] })
+    expect(s.monitors.find((m) => m.id === 'cairn-errors')).toMatchObject({ status: 'ok', text: '2 error lines in the last 15 minutes: [cairn] label: could not parse' })
+    state.errors = Array.from({ length: 3 }, (_, i) => ({ ts: 'x', text: `error ${i}` }))
+    now += 15_000
+    s = await c.tick()
+    expect(s.apps[0]!.errors.last15m).toBe(5)
+    expect(s.alerts).toMatchObject([{ rule: 'cairn-errors', severity: 'warn' }])
+    // A quarter of an hour later the window has moved on and the monitor is ok again.
+    now += 16 * 60_000
+    s = await c.tick()
+    expect(s.apps[0]!.errors.last15m).toBe(0)
+    expect(s.apps[0]!.errors.recent).toHaveLength(5)
+    expect(s.alerts).toEqual([])
   })
 })

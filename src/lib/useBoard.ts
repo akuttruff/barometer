@@ -94,3 +94,22 @@ export function useHistory(target: string, metric: string, hours: number, everyM
   }, [target, metric, hours, everyMs])
   return points
 }
+
+/** Several metrics' samples for one graph, fetched together now and then, and again when the window changes. */
+export function useHistories(specs: { target: string; metric: string }[], hours: number, everyMs = 60_000): { ts: number; value: number }[][] {
+  const [series, setSeries] = useState<{ ts: number; value: number }[][]>([])
+  const key = specs.map((s) => `${s.target}/${s.metric}`).join(',')
+  useEffect(() => {
+    let live = true
+    const fetchIt = () => {
+      Promise.all(specs.map((s) => api.history(s.target, s.metric, hours).catch(() => [] as { ts: number; value: number }[])))
+        .then((all) => { if (live) setSeries(all) })
+    }
+    fetchIt()
+    const timer = window.setInterval(fetchIt, everyMs)
+    return () => { live = false; window.clearInterval(timer) }
+    // The specs are compared by their key, so a fresh array each render does not refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, hours, everyMs])
+  return series
+}

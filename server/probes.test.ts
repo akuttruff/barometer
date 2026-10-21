@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { backupStatus, dataFileStatus, describeOmlx, describeSpeech, parseBackupLog, parseDf, parseLaunchd, parseModels, parsePressure, parseRoute, parseTailscale, parseTherm, parseVmStat, parseWatchLines, pickProbeModel, watchLog } from './probes.ts'
+import { appErrors, backupStatus, dataFileStatus, isErrorLine, describeOmlx, describeSpeech, parseBackupLog, parseDf, parseLaunchd, parseModels, parsePressure, parseRoute, parseTailscale, parseTherm, parseVmStat, parseWatchLines, pickProbeModel, watchLog } from './probes.ts'
 
 describe('parsers', () => {
   it('reads launchctl print', () => {
@@ -71,6 +71,15 @@ describe('parsers', () => {
     expect(parseBackupLog('')).toEqual({ lastRun: null, failures: 0, state: 'unknown' })
   })
 
+  it('tells an error line from the rest of an app\'s log', () => {
+    expect(isErrorLine('[engine] compaction skipped: The operation was aborted due to timeout')).toBe(true)
+    expect(isErrorLine('[orrery] could not work out what to remember: 500')).toBe(true)
+    expect(isErrorLine('Error: connect ECONNREFUSED 127.0.0.1:1234')).toBe(true)
+    expect(isErrorLine('    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)')).toBe(false)
+    expect(isErrorLine('  ➜  Local:   http://localhost:8410/')).toBe(false)
+    expect(isErrorLine('[cairn] 3 lookups cached')).toBe(false)
+  })
+
   it('reads services-watch\'s lines', () => {
     const text = '2026-10-20 14:53:08 whetstone restarted: signaled service: Terminated: 15; exited due to exit(143)\n2026-10-20 15:00:00 cairn stopped\nnoise\n'
     expect(parseWatchLines(text)).toEqual([
@@ -100,6 +109,15 @@ describe('on disk', () => {
     const missing = dataFileStatus({ ...target, file: path.join(dir, 'gone.sqlite'), backupDir: 'none' }, { check: false, maxHours: 26, backupsDir: path.join(dir, 'Backups') })
     expect(missing).toMatchObject({ bytes: null, check: 'unknown', backup: { state: 'unknown' } })
     expect(missing.error).toMatch(/Backups: /)
+  })
+
+  it('reads an app\'s new error lines, starting near the end of a long log', () => {
+    const file = path.join(dir, 'app.log')
+    fs.writeFileSync(file, `${'x'.repeat(70_000)}\nold error line\nfine\nlookup failed: timeout\n`)
+    const first = appErrors(file, 0, 1000)
+    expect(first.lines).toEqual([{ ts: '1970-01-01T00:00:01.000Z', text: 'old error line' }, { ts: '1970-01-01T00:00:01.000Z', text: 'lookup failed: timeout' }])
+    fs.appendFileSync(file, 'all good\nError: boom\n')
+    expect(appErrors(file, first.offset).lines.map((l) => l.text)).toEqual(['Error: boom'])
   })
 
   it('reads the watch log from where it left off, and from the start after a truncation', () => {

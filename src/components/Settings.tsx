@@ -86,6 +86,7 @@ export default function Settings({ settings, loaded, onSaved, onClose }: Props) 
           <label className="field">First token slower than, ms<input type="number" min={0} value={s.ttftMaxMs} onChange={num('ttftMaxMs')} /></label>
           <label className="field">Fewer tokens / s than<input type="number" min={0} value={s.tpsMin} onChange={num('tpsMin')} /></label>
         </div>
+        <label className="field">Error lines in an app's log in 15 minutes<input type="number" min={1} value={s.errorsMax} onChange={num('errorsMax')} /></label>
 
         <h3 className="section-title">Tell me</h3>
         <label className="field check"><input type="checkbox" checked={s.notifyMac} onChange={(e) => set('notifyMac', e.target.checked)} /> With a notification on the Mac</label>

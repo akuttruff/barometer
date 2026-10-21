@@ -1,5 +1,5 @@
-import type { AppStatus, DataStatus, Event, HostStatus, ModelProbe, ModelStatus, ServiceStatus, Snapshot } from '../src/types.ts'
-import { evaluate } from './alerts.ts'
+import type { AppStatus, DataStatus, ErrorLine, Event, HostStatus, ModelProbe, ModelStatus, ServiceStatus, Snapshot } from '../src/types.ts'
+import { evaluate, monitors } from './monitors.ts'
 import type { Notifier } from './notify.ts'
 import * as live from './probes.ts'
 import type { WatchLine } from './probes.ts'
@@ -16,10 +16,12 @@ export interface Probes {
   probeModel: (settings: ServerSettings, model: string) => Promise<ModelProbe>
   data: (options: { check: boolean; maxHours: number }) => DataStatus
   watchLog: (offset: number) => { lines: WatchLine[]; offset: number }
+  /** The error lines an app's own log has gained since the last look. */
+  appErrors: (file: string, offset: number) => { lines: ErrorLine[]; offset: number }
 }
 
 export const realProbes: Probes = {
-  app: live.appStatus, service: live.serviceStatus, host: live.hostStatus, model: live.modelStatus, probeModel: live.probeModel, data: live.dataStatus, watchLog: live.watchLog,
+  app: live.appStatus, service: live.serviceStatus, host: live.hostStatus, model: live.modelStatus, probeModel: live.probeModel, data: live.dataStatus, watchLog: live.watchLog, appErrors: live.appErrors,
 }
 
 export interface CollectorOptions {
@@ -38,6 +40,10 @@ export const DEFAULT_INTERVAL_MS = 15_000
 const CHECK_EVERY = 60
 /** Old samples go this often, in rounds. */
 const PRUNE_EVERY = 240
+/** An app's error monitor counts this far back. */
+const ERRORS_WINDOW_MS = 15 * 60_000
+/** How many of an app's latest error lines are kept to show. */
+const ERRORS_KEPT = 20
 
 /** What is remembered about an app between rounds, and across restarts, to tell a deploy from a restart. */
 interface Seen { version: string; startedAt: string }
@@ -137,6 +143,19 @@ export class Collector {
       if (f.check === 'unknown') f.check = (this.checks.get(f.id) ?? 'unknown')
       else this.checks.set(f.id, f.check)
     }
+    // Each app's own log: the error lines since last round, counted over the last quarter hour.
+    for (const app of apps) {
+      const target = this.apps.find((t) => t.id === app.id)
+      if (!target) continue
+      const got = this.probes.appErrors(target.log, Number(this.store.getState(`log-offset:${app.id}`) ?? 0))
+      this.store.setState(`log-offset:${app.id}`, String(got.offset))
+      const kept = JSON.parse(this.store.getState(`errors:${app.id}`) ?? '[]') as ErrorLine[]
+      const recent = [...kept, ...got.lines].slice(-ERRORS_KEPT)
+      this.store.setState(`errors:${app.id}`, JSON.stringify(recent))
+      this.store.sample(app.id, 'errors', got.lines.length, now)
+      const last15m = this.store.history(app.id, 'errors', now - ERRORS_WINDOW_MS, now).reduce((sum, p) => sum + p.value, 0)
+      app.errors = { last15m, recent }
+    }
 
     // The watch log says why a service restarted; said once, on the restart it belongs to.
     for (const line of watched.lines) {
@@ -148,9 +167,10 @@ export class Collector {
     for (const s of services) this.downTicks[s.id] = s.state === 'down' ? (this.downTicks[s.id] ?? 0) + 1 : 0
 
     this.keep(apps, services, host, model, data, now)
-    const snapshot: Snapshot = { ts: new Date(now).toISOString(), apps, services, model, host, data, alerts: [] }
+    const snapshot: Snapshot = { ts: new Date(now).toISOString(), apps, services, model, host, data, monitors: [], alerts: [] }
     await this.reconcile(snapshot, settings, now)
     snapshot.alerts = this.store.openAlerts()
+    snapshot.monitors = monitors(snapshot, settings, this.downTicks).map((m) => ({ ...m, since: snapshot.alerts.find((a) => a.rule === m.id && a.target === m.target)?.openedAt ?? null }))
     this.latest = snapshot
     this.store.setState('snapshot', JSON.stringify(snapshot))
     this.tell({ snapshot })

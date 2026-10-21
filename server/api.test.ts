@@ -18,7 +18,7 @@ let realFetch: typeof fetch
 
 const probes: Probes = {
   app: async () => app('cairn'), service: async () => service('speech'), host: async () => host(), model: async (_s, probe) => model({ probe }),
-  probeModel: async () => ({ at: 'x', model: 'm', ttftMs: 1, tokensPerSecond: 1, tokens: 1 }), data: () => data(), watchLog: (offset) => ({ lines: [], offset }),
+  probeModel: async () => ({ at: 'x', model: 'm', ttftMs: 1, tokensPerSecond: 1, tokens: 1 }), data: () => data(), watchLog: (offset) => ({ lines: [], offset }), appErrors: (_f, offset) => ({ lines: [], offset }),
 }
 
 beforeEach(async () => {
@@ -27,7 +27,7 @@ beforeEach(async () => {
   realFetch = globalThis.fetch.bind(globalThis)
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'barometer-api-'))
   notices = []
-  state = createApiState({ dir, start: false, collector: { probes, apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'x', tailnetPort: 443 }], services: [] }, notifier: { mac: async (n) => { notices.push(n) }, push: async (_s, payload) => { notices.push(JSON.parse(payload) as Notice) } } })
+  state = createApiState({ dir, start: false, collector: { probes, apps: [{ id: 'cairn', name: 'Cairn', port: 8210, label: 'x', tailnetPort: 443, log: 'x.log' }], services: [] }, notifier: { mac: async (n) => { notices.push(n) }, push: async (_s, payload) => { notices.push(JSON.parse(payload) as Notice) } } })
   state.store.setSettings({ notifyMac: true, probeEveryMinutes: 0 })
   const middleware = createMiddleware(state)
   server = http.createServer((req, res) => middleware(req, res, () => { res.statusCode = 404; res.end('not api') }))

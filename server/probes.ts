@@ -53,20 +53,22 @@ export const launchdStatus = async (label: string): Promise<LaunchdStatus | null
 
 // --- the apps ---------------------------------------------------------------
 
-/** What an app's own health route says, and how long it took to say it. */
+const NO_ERRORS = { last15m: 0, recent: [] }
+
+/** What an app's own health route says, and how long it took to say it. The log's errors are added by the collector. */
 export async function appStatus(target: AppTarget, dnsName: string | null): Promise<AppStatus> {
   const base = { id: target.id, name: target.name, url: appUrl(target, dnsName), port: target.port }
   const launchd = await launchdStatus(target.label)
   try {
     const r = await timedGet(`http://127.0.0.1:${target.port}/api/health`, 8000)
-    if (r.status !== 200) return { ...base, state: 'down', latencyMs: r.ms, health: null, launchd, busyTotal: 0, error: `${r.status} from /api/health` }
+    if (r.status !== 200) return { ...base, state: 'down', latencyMs: r.ms, health: null, launchd, busyTotal: 0, error: `${r.status} from /api/health`, errors: NO_ERRORS }
     const health = JSON.parse(r.text) as AppHealth
     const busyTotal = Object.values(health.busy ?? {}).reduce((a, b) => a + b, 0)
     const depDown = Object.values(health.deps ?? {}).includes('down')
     const state: State = !health.ok ? 'down' : depDown ? 'warn' : 'ok'
-    return { ...base, state, latencyMs: r.ms, health, launchd, busyTotal, error: health.errors?.[0] ?? null }
+    return { ...base, state, latencyMs: r.ms, health, launchd, busyTotal, error: health.errors?.[0] ?? null, errors: NO_ERRORS }
   } catch (err) {
-    return { ...base, state: 'down', latencyMs: null, health: null, launchd, busyTotal: 0, error: (err as Error).message }
+    return { ...base, state: 'down', latencyMs: null, health: null, launchd, busyTotal: 0, error: (err as Error).message, errors: NO_ERRORS }
   }
 }
 
@@ -369,19 +371,43 @@ export function parseWatchLines(text: string): WatchLine[] {
   return out
 }
 
-/** The log's lines past an offset, and the offset to read from next time; a truncated log is read from its start. */
-export function watchLog(offset: number, file = WATCH_LOG): { lines: WatchLine[]; offset: number } {
+/** A file's text past an offset, and the offset to read from next time; a truncated file is read from its start. A first look at a large file starts near its end. */
+export function readSince(file: string, offset: number, firstLookBytes = 64_000): { text: string; offset: number } {
   try {
     const size = fs.statSync(file).size
-    const from = offset > size ? 0 : offset
-    if (from === size) return { lines: [], offset: size }
+    let from = offset > size ? 0 : offset
+    if (offset === 0 && size > firstLookBytes) from = size - firstLookBytes
+    if (from === size) return { text: '', offset: size }
     const fd = fs.openSync(file, 'r')
     try {
       const buf = Buffer.alloc(size - from)
       fs.readSync(fd, buf, 0, buf.length, from)
-      return { lines: parseWatchLines(buf.toString('utf8')), offset: size }
+      return { text: buf.toString('utf8'), offset: size }
     } finally { fs.closeSync(fd) }
   } catch {
-    return { lines: [], offset }
+    return { text: '', offset }
   }
+}
+
+/** The log's lines past an offset, and the offset to read from next time. */
+export function watchLog(offset: number, file = WATCH_LOG): { lines: WatchLine[]; offset: number } {
+  const r = readSince(file, offset, Number.POSITIVE_INFINITY)
+  return { lines: parseWatchLines(r.text), offset: r.offset }
+}
+
+// --- the apps' own logs ------------------------------------------------------
+
+const ERROR_WORDS = /\b(error|errors|failed|failure|exception|unhandled|rejected|timeout|timed out|cannot|could not|not remembered|E[A-Z]{4,})\b/i
+/** Lines that only look like errors: Vite's banner, a stack frame's path. */
+const NOT_ERRORS = /^\s+at |^\s*➜|vite v\d/
+
+/** Whether a line of an app's log says something went wrong. */
+export const isErrorLine = (line: string): boolean => ERROR_WORDS.test(line) && !NOT_ERRORS.test(line)
+
+/** The error lines an app has logged since the last look, each stamped with when it was seen. */
+export function appErrors(file: string, offset: number, now = Date.now()): { lines: { ts: string; text: string }[]; offset: number } {
+  const r = readSince(file, offset)
+  const at = new Date(now).toISOString()
+  const lines = r.text.split('\n').map((l) => l.trim()).filter((l) => l && isErrorLine(l)).map((text) => ({ ts: at, text: text.slice(0, 300) }))
+  return { lines, offset: r.offset }
 }

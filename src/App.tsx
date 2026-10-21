@@ -1,33 +1,45 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Settings as SettingsIcon } from 'lucide-react'
-import Apps from './components/Apps.tsx'
-import DataCard from './components/DataCard.tsx'
-import Dot from './components/Dot.tsx'
-import HostCard from './components/HostCard.tsx'
-import ModelCard from './components/ModelCard.tsx'
+import Graphs from './components/Graphs.tsx'
+import { MonitorGrid, MonitorSummary, STATUS_WORD, Triggered } from './components/Monitors.tsx'
 import Settings from './components/Settings.tsx'
-import Timeline, { Alerts } from './components/Timeline.tsx'
+import { EventStream, RecentErrors } from './components/Streams.tsx'
+import { AppsTable, DataTable } from './components/Tables.tsx'
 import Unreachable from './components/Unreachable.tsx'
+import Values from './components/Values.tsx'
 import { api } from './lib/api.ts'
 import { ago } from './lib/format.ts'
 import { useBoard } from './lib/useBoard.ts'
-import { overall } from './types.ts'
-import type { Settings as SettingsType } from './types.ts'
+import type { MonitorStatus, Settings as SettingsType, Snapshot } from './types.ts'
 
-const WORD = { ok: 'All fine', warn: 'Needs a look', down: 'Something is down', unknown: 'Looking…' }
+/** The windows the graphs can show. */
+export const RANGES: { label: string; hours: number }[] = [{ label: '1h', hours: 1 }, { label: '6h', hours: 6 }, { label: '1d', hours: 24 }, { label: '1w', hours: 168 }]
+
+/** The worst status across the monitors: the light in the title. */
+export function overallStatus(s: Snapshot | null): MonitorStatus {
+  if (!s) return 'nodata'
+  const all = s.monitors.map((m) => m.status)
+  if (all.includes('alert')) return 'alert'
+  if (all.includes('warn')) return 'warn'
+  return all.length && all.every((x) => x === 'nodata') ? 'nodata' : 'ok'
+}
+
+const readRange = (): number => { try { return Number(localStorage.getItem('barometer.range')) || 6 } catch { return 6 } }
 
 export default function App() {
   const board = useBoard()
   const [settings, setSettings] = useState<SettingsType | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [hours, setHoursState] = useState(readRange)
+  const setHours = (h: number) => { setHoursState(h); try { localStorage.setItem('barometer.range', String(h)) } catch { /* a preference */ } }
   // The "ago" words tick over on their own.
   const [, setNow] = useState(0)
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 10_000)
     return () => window.clearInterval(t)
   }, [])
-  useEffect(() => { api.settings().then(setSettings).catch(() => { /* the sheet fetches again when opened */ }) }, [])
+  useEffect(() => { api.settings().then(setSettings).catch(() => { /* fetched again when the sheet opens */ }) }, [])
 
   const refresh = async (): Promise<void> => {
     setRefreshing(true)
@@ -36,33 +48,38 @@ export default function App() {
   }
 
   const s = board.snapshot
-  const state = s ? overall(s) : 'unknown'
+  const status = overallStatus(s)
 
   return (
     <div className="app">
       <Unreachable onBack={board.reload} />
-      <header className="app-header">
-        <div className="app-header-side">
-          <button type="button" className={`icon-btn ${refreshing ? 'spinning' : ''}`} aria-label="Look again now" onClick={() => void refresh()}><RefreshCw size={20} aria-hidden="true" /></button>
+      <header className="topbar">
+        <div className="topbar-title">
+          <h1>Barometer</h1>
+          <span className={`pill pill-${status}`}>{STATUS_WORD[status]}</span>
+          <span className="topbar-sub">{s ? `updated ${ago(s.ts)}` : 'loading'}{board.live ? ' · live' : s ? ' · polling' : ''}</span>
         </div>
-        <div className="app-title">
-          <h1><Dot state={state} size={12} /> Barometer</h1>
-          <span className="app-sub">{WORD[state]}{s ? ` · ${ago(s.ts)}` : ''}{board.live ? '' : s ? ' · polling' : ''}</span>
-        </div>
-        <div className="app-header-side end">
-          <button type="button" className="icon-btn" aria-label="Settings" onClick={() => setSettingsOpen(true)}><SettingsIcon size={20} aria-hidden="true" /></button>
+        <div className="topbar-tools">
+          <div className="range" role="group" aria-label="Time range">
+            {RANGES.map((r) => <button key={r.hours} type="button" className={hours === r.hours ? 'on' : ''} aria-pressed={hours === r.hours} onClick={() => setHours(r.hours)}>{r.label}</button>)}
+          </div>
+          <button type="button" className={`icon-btn ${refreshing ? 'spinning' : ''}`} aria-label="Look again now" onClick={() => void refresh()}><RefreshCw size={18} aria-hidden="true" /></button>
+          <button type="button" className="icon-btn" aria-label="Settings" onClick={() => setSettingsOpen(true)}><SettingsIcon size={18} aria-hidden="true" /></button>
         </div>
       </header>
-      <main className="scroll">
+      <main className="dash">
         {board.error && !s && <p className="error-card" role="alert">{board.error}</p>}
         {s && (
           <>
-            <Alerts alerts={s.alerts} />
-            <Apps apps={s.apps} services={s.services} ts={s.ts} />
-            <ModelCard model={s.model} />
-            <HostCard host={s.host} />
-            <DataCard data={s.data} />
-            <Timeline events={board.events} />
+            <MonitorSummary monitors={s.monitors} />
+            <Triggered monitors={s.monitors} />
+            <MonitorGrid monitors={s.monitors} />
+            <Values snapshot={s} />
+            <Graphs snapshot={s} hours={hours} />
+            <AppsTable apps={s.apps} services={s.services} model={s.model} />
+            <DataTable data={s.data} />
+            <EventStream events={board.events} />
+            <RecentErrors apps={s.apps} />
           </>
         )}
       </main>
