@@ -4,7 +4,7 @@ import { reach } from './reach.ts'
 import type { Event, Snapshot } from '../types.ts'
 
 /** How often to ask again when the live stream is not open. */
-export const POLL_MS = 15_000
+export const POLL_MS = 60_000
 /** The timeline keeps this many recent events on the page. */
 const EVENTS_KEPT = 80
 

@@ -3,7 +3,7 @@
 A monitoring board for apps you run on your own Mac with local models and
 reach from your phone over Tailscale. It watches each app and the services
 beside it, the model server and how fast it answers, the machine itself,
-and the databases and their backups. Every fifteen seconds it looks at all
+and the databases and their backups. Once a minute it looks at all
 of it, judges a monitor for each, keeps the numbers for the graphs, and
 says so, on the Mac and on the phone, when a monitor leaves OK.
 
@@ -47,10 +47,10 @@ The model server is LM Studio, timed with a short completion now and then.
 
 | Group | Monitor | Alert when |
 | --- | --- | --- |
-| Apps | *App* up | Its `GET /api/health` does not answer, two rounds running. |
+| Apps | *App* up | Its `GET /api/health` does not answer two minutes running. |
 | | *App* dependencies | The health route says a dependency (the model server, an MCP server, a data file) is down. |
 | | *App* errors | Its launchd log gained more error lines in fifteen minutes than Settings allows. |
-| Services | *Service* up | No answer, two rounds running. |
+| Services | *Service* up | No answer two minutes running. |
 | Model | LM Studio up, Model loaded, Model speed | LM Studio does not answer; no model (or not the one Settings expects) is loaded; the timed completion is slower than the thresholds. |
 | Mac | Memory pressure, Disk space, CPU thermal, Tailscale | macOS reports pressure; the disk is nearly full; the CPU is throttled; Tailscale is stopped or the Mac is offline on the tailnet. |
 | Data | *Database* backup, *Database* integrity, Backup job | The newest dated copy in `~/Backups` is older than a day; SQLite's quick check fails; last night's backup job logged failures. |

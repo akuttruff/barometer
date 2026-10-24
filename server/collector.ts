@@ -35,11 +35,12 @@ export interface CollectorOptions {
   now?: () => number
 }
 
-export const DEFAULT_INTERVAL_MS = 15_000
-/** The databases get their quick check this often, in rounds. */
-const CHECK_EVERY = 60
-/** Old samples go this often, in rounds. */
-const PRUNE_EVERY = 240
+/** A round a minute: nothing watched needs finer than that, and a busy Mac shouldn't pay for it. */
+export const DEFAULT_INTERVAL_MS = 60_000
+/** The databases get their quick check this often, in rounds (a quarter hour). */
+const CHECK_EVERY = 15
+/** Old samples go this often, in rounds (an hour). */
+const PRUNE_EVERY = 60
 /** An app's error monitor counts this far back. */
 const ERRORS_WINDOW_MS = 15 * 60_000
 /** How many of an app's latest error lines are kept to show. */
