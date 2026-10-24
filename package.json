@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "BAROMETER_DEMO=1 vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -14,7 +15,8 @@
     "lint": "oxlint",
     "check": "tsc --noEmit && oxlint && vitest run",
     "deploy": "sh scripts/deploy.sh",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "seed:demo": "node --experimental-transform-types --no-warnings scripts/seed-demo.ts"
   },
   "dependencies": {
     "lucide-react": "^1.48.0",

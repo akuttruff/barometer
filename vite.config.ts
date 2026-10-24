@@ -2,6 +2,7 @@ import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import api from './server/api.ts'
+import { demoProbes } from './server/demo.ts'
 
 // Any name on the tailnet, not one machine's: `tailscale serve` is what
 // actually limits who can reach this, so a rename shouldn't break it.
@@ -12,17 +13,22 @@ export default defineConfig(({ command, isPreview }) => {
   // remote): it keeps the samples and sends the alerts. `vite dev` watches
   // the same services but keeps its own scratch database and never probes
   // the model or notifies, so trying something out disturbs nothing.
-  const real = command === 'build' || isPreview
-  const dir = real ? undefined : path.resolve(process.cwd(), '.data-dev')
+  //
+  // BAROMETER_DEMO=1 (`npm run dev:demo`) swaps the probes for a made-up bad
+  // afternoon (server/demo.ts) on a database `npm run seed:demo` fills, for
+  // the README's screenshots.
+  const demo = !!process.env.BAROMETER_DEMO
+  const real = !demo && (command === 'build' || isPreview)
+  const dir = real ? undefined : path.resolve(process.cwd(), demo ? '.data-demo' : '.data-dev')
 
   return {
-    plugins: [react(), api({ dir, quiet: !real })],
+    plugins: [react(), api({ dir, quiet: !real, ...(demo ? { collector: { probes: demoProbes(), intervalMs: 2000, modelProbe: false } } : {}) })],
     server: {
       host: true,
       port: 8500,
       strictPort: true,
       allowedHosts: [TAILNET],
-      watch: { ignored: ['**/coverage/**', '**/.data/**', '**/.data-dev/**'] },
+      watch: { ignored: ['**/coverage/**', '**/.data/**', '**/.data-dev/**', '**/.data-demo/**'] },
     },
     // A separate port from `server` above: the persistent, built instance
     // Tailscale points at, so it can run alongside `npm run dev`.

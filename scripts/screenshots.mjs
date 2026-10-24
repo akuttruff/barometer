@@ -1,10 +1,11 @@
 // Screenshots of the board for the README, taken with headless Chrome over
-// its DevTools protocol (a raw WebSocket; no npm dependency), against the
-// running instance:
+// its DevTools protocol (a raw WebSocket; no npm dependency). The README's
+// come from the demo, a made-up bad afternoon:
 //
-//   npm run screenshots            (writes docs/screenshots/*.png)
+//   npm run seed:demo && npm run dev:demo                       (in one terminal)
+//   BAROMETER_URL=http://127.0.0.1:8500 npm run screenshots     (writes docs/screenshots/*.png)
 //
-// BAROMETER_URL picks another instance (the default is the preview on :8510).
+// Without BAROMETER_URL it shoots the real instance, the preview on :8510.
 // Needs Google Chrome at the usual macOS path, or CHROME=/path/to/chrome.
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
