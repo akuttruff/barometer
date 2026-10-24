@@ -24,7 +24,8 @@ export default defineConfig(({ command, isPreview }) => {
   return {
     plugins: [react(), api({ dir, quiet: !real, ...(demo ? { collector: { probes: demoProbes(), intervalMs: 2000, modelProbe: false } } : {}) })],
     server: {
-      host: true,
+      // Loopback only: `tailscale serve` proxies to 127.0.0.1, and nothing on the Wi-Fi should reach the board.
+      host: '127.0.0.1',
       port: 8500,
       strictPort: true,
       allowedHosts: [TAILNET],
@@ -32,6 +33,6 @@ export default defineConfig(({ command, isPreview }) => {
     },
     // A separate port from `server` above: the persistent, built instance
     // Tailscale points at, so it can run alongside `npm run dev`.
-    preview: { host: true, port: 8510, strictPort: true, allowedHosts: [TAILNET] },
+    preview: { host: '127.0.0.1', port: 8510, strictPort: true, allowedHosts: [TAILNET] },
   }
 })
