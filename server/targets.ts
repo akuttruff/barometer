@@ -25,6 +25,7 @@ export const APPS: AppTarget[] = [
   { id: 'cairn', name: 'Cairn', port: 8210, label: 'com.amie.cairn', log: path.join(HOME, 'Library/Logs/com.amie.cairn.log'), tailnetPort: 443 },
   { id: 'whetstone', name: 'Whetstone', port: 8310, label: 'com.amie.whetstone', log: path.join(HOME, 'Library/Logs/com.amie.whetstone.log'), tailnetPort: 8444 },
   { id: 'orrery', name: 'Orrery', port: 8410, label: 'com.amie.orrery', log: path.join(HOME, 'Library/Logs/com.amie.orrery.log'), tailnetPort: 8445 },
+  { id: 'footfall', name: 'Footfall', port: 8610, label: 'com.amie.footfall', log: path.join(HOME, 'Library/Logs/com.amie.footfall.log'), tailnetPort: 8447 },
 ]
 
 /** Where an app is opened from: its address on the tailnet, once Tailscale has said what the Mac is called. */
