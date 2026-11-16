@@ -23,7 +23,7 @@ interface Props {
 }
 
 /** Datadog's series palette, more or less. */
-export const PALETTE = ['#C9B4EC', '#6FA8F5', '#4FC9A8', '#F2A054', '#F07AA8', '#B9B4A6']
+export const PALETTE = ['#C9B4EC', '#6FA8F5', '#4FC9A8', '#F2A054', '#F07AA8', '#D4D4D4']
 
 const PAD = { top: 8, right: 10, bottom: 20, left: 44 }
 
